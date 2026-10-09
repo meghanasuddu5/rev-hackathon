@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My Circles')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+<div class="gp-page">
+  <main style="max-width:760px;width:100%;">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <h1 style="font-size:22px;font-weight:700;color:var(--gp-text);">⭕ My Circles</h1>
+      <button onclick="document.getElementById('create-circle-modal').style.display='flex'"
+              class="btn btn-primary">+ New Circle</button>
+    </div>
+
+    <!-- Create Circle Modal -->
+    <div id="create-circle-modal"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center;">
+      <div class="gp-card" style="width:100%;max-width:420px;padding:28px;">
+        <h2 style="font-size:18px;font-weight:600;margin-bottom:20px;">Create a Circle</h2>
+        <form th:action="@{/circles/create}" method="post" th:object="${circleDTO}">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <div class="gp-form-group">
+            <label class="gp-label">Circle Name</label>
+            <input type="text" th:field="*{name}" class="gp-input" placeholder="e.g. Close Friends"/>
+            <div class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+          </div>
+          <div class="gp-form-group">
+            <label class="gp-label">Description (optional)</label>
+            <input type="text" th:field="*{description}" class="gp-input"
+                   placeholder="What is this circle for?"/>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button type="submit" class="btn btn-primary">Create</button>
+            <button type="button" class="btn btn-outline"
+                    onclick="document.getElementById('create-circle-modal').style.display='none'">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Circle List -->
+    <div th:if="${circles.isEmpty()}" class="empty-state">
+      <div class="empty-state-icon">⭕</div>
+      <div class="empty-state-title">No circles yet</div>
+      <div class="empty-state-desc">Create circles to share posts with specific groups of people.</div>
+    </div>
+
+    <div th:each="circle : ${circles}" class="circle-card">
+      <div class="circle-header">
+        <div>
+          <div class="circle-name" th:text="${circle.name}"></div>
+          <div style="font-size:13px;color:var(--gp-text-3);"
+               th:if="${circle.description}" th:text="${circle.description}"></div>
+          <div style="font-size:13px;color:var(--gp-text-3);">
+            <span th:text="${circle.members.size()}">0</span> member(s)
+          </div>
+        </div>
+        <form th:action="@{'/circles/' + ${circle.id} + '/delete'}" method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button type="submit" class="btn btn-ghost btn-sm"
+                  onclick="return confirm('Delete this circle?')"
+                  style="color:var(--google-red);">🗑 Delete</button>
+        </form>
+      </div>
+
+      <!-- Members -->
+      <div class="circle-member-list">
+        <span th:each="member : ${circle.members}" class="member-chip">
+          <img th:src="${member.profilePicture != null ? member.profilePicture : '/images/avatar-default.svg'}"
+               style="width:20px;height:20px;border-radius:50%;object-fit:cover;" alt=""/>
+          <span th:text="${member.displayName}"></span>
+          <form th:action="@{'/circles/' + ${circle.id} + '/remove-member/' + ${member.id}}"
+                method="post" style="display:inline;">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" style="background:none;border:none;cursor:pointer;color:var(--gp-primary);font-size:14px;">✕</button>
+          </form>
+        </span>
+      </div>
+
+      <!-- Add Member Form -->
+      <form th:action="@{'/circles/' + ${circle.id} + '/add-member'}" method="post"
+            style="display:flex;gap:8px;margin-top:10px;">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <input type="text" name="username" class="gp-input"
+               placeholder="Add by username" style="flex:1;"/>
+        <button type="submit" class="btn btn-outline btn-sm">Add</button>
+      </form>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

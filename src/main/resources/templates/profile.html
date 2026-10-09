@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${profileUser.displayName})}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+<div class="gp-page">
+  <main class="gp-main">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <!-- Profile Header -->
+    <div class="gp-card" style="margin-bottom:20px;">
+      <div class="profile-cover" th:style="${profileUser.coverImage != null ? 'background-image:url(' + profileUser.coverImage + ');background-size:cover;' : ''}">
+        <div class="profile-avatar-wrap">
+          <img th:src="${profileUser.profilePicture != null ? profileUser.profilePicture : '/images/avatar-default.svg'}"
+               class="profile-avatar" th:alt="${profileUser.displayName}"/>
+        </div>
+      </div>
+      <div class="profile-info">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div class="profile-name" th:text="${profileUser.displayName}"></div>
+            <div class="profile-username" th:text="'@' + ${profileUser.username}"></div>
+            <div class="profile-bio" th:if="${profileUser.bio}" th:text="${profileUser.bio}"></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <th:block th:if="${isOwner}">
+              <a th:href="@{/profile/edit}" class="btn btn-outline">✏️ Edit Profile</a>
+            </th:block>
+            <th:block th:if="${!isOwner}">
+              <form th:if="${!isFollowing}"
+                    th:action="@{'/follow/' + ${profileUser.username}}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-primary">+ Follow</button>
+              </form>
+              <form th:if="${isFollowing}"
+                    th:action="@{'/unfollow/' + ${profileUser.username}}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-outline">✓ Following</button>
+              </form>
+            </th:block>
+          </div>
+        </div>
+
+        <div class="profile-stats" th:if="${canView}">
+          <div class="profile-stat">
+            <div class="profile-stat-num" th:text="${posts.totalElements}">0</div>
+            <div class="profile-stat-label">Posts</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-num" th:text="${followerCount}">0</div>
+            <div class="profile-stat-label">Followers</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-num" th:text="${followingCount}">0</div>
+            <div class="profile-stat-label">Following</div>
+          </div>
+        </div>
+
+        <!-- Interests -->
+        <div th:if="${!profileUser.interests.isEmpty()}" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">
+          <span th:each="interest : ${profileUser.interests}"
+                class="category-tag" th:text="${interest}"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Private profile guard -->
+    <div th:if="${!canView}" class="empty-state gp-card">
+      <div class="empty-state-icon">🔒</div>
+      <div class="empty-state-title">This profile is private</div>
+      <div class="empty-state-desc">Follow this person to see their posts.</div>
+    </div>
+
+    <!-- Posts -->
+    <th:block th:if="${canView}">
+      <div th:if="${posts.isEmpty()}" class="empty-state">
+        <div class="empty-state-icon">📝</div>
+        <div class="empty-state-title">No posts yet</div>
+      </div>
+
+      <div th:each="post : ${posts}" class="post-card">
+        <div class="post-header">
+          <div class="post-author">
+            <img th:src="${post.author.profilePicture != null ? post.author.profilePicture : '/images/avatar-default.svg'}"
+                 class="post-avatar" alt=""/>
+            <div>
+              <div class="post-author-name" th:text="${post.author.displayName}"></div>
+              <div class="post-meta"
+                   th:text="${#temporals.format(post.createdAt, 'MMM d, yyyy')}"></div>
+            </div>
+          </div>
+          <form th:if="${isOwner}"
+                th:action="@{'/posts/' + ${post.id} + '/delete'}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" class="btn btn-ghost btn-sm"
+                    onclick="return confirm('Delete?')"
+                    style="color:var(--google-red);">🗑</button>
+          </form>
+        </div>
+        <div class="post-content" th:text="${post.content}"></div>
+        <img th:if="${post.imageUrl != null}" th:src="${post.imageUrl}"
+             class="post-image" alt=""/>
+        <div class="post-actions">
+          <form th:action="@{'/posts/' + ${post.id} + '/like'}" method="post" style="flex:1;">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" class="post-action-btn">
+              👍 Like (<span th:text="${post.reactions.size()}">0</span>)
+            </button>
+          </form>
+          <form th:action="@{'/posts/' + ${post.id} + '/bookmark'}" method="post" style="flex:1;">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" class="post-action-btn">🔖 Save</button>
+          </form>
+        </div>
+      </div>
+
+      <div th:if="${posts.totalPages > 1}" class="pagination">
+        <a th:if="${!posts.first}"
+           th:href="@{'/profile/' + ${profileUser.username}(page=${posts.number - 1})}"
+           class="page-btn">← Prev</a>
+        <a th:if="${!posts.last}"
+           th:href="@{'/profile/' + ${profileUser.username}(page=${posts.number + 1})}"
+           class="page-btn">Next →</a>
+      </div>
+    </th:block>
+  </main>
+</div>
+
+</body>
+</html>

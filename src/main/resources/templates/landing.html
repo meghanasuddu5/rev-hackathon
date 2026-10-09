@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Google+ — A Modern Social Network</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" th:href="@{/css/main.css}"/>
+</head>
+<body>
+<section class="landing-hero">
+  <div>
+    <div class="landing-logo">
+      <span class="landing-logo-g">G</span><span class="landing-logo-plus">+</span>
+    </div>
+    <p class="landing-tagline">Connect. Share. Discover.</p>
+    <p class="landing-sub">
+      A modern, privacy-first social network built around what matters —
+      your people, your interests, your communities.
+    </p>
+    <div class="landing-actions">
+      <a th:href="@{/auth/register}" class="btn btn-white btn-lg" style="padding:12px 32px;font-size:16px;">
+        Get Started — It's Free
+      </a>
+      <a th:href="@{/auth/login}" class="btn btn-outline-white btn-lg" style="padding:12px 32px;font-size:16px;">
+        Sign In
+      </a>
+    </div>
+
+    <div class="landing-features">
+      <div class="feature-item">
+        <div class="feature-icon">⭕</div>
+        <div class="feature-title">Circles</div>
+        <div class="feature-desc">Share content with exactly who you want — friends, family, colleagues.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">👥</div>
+        <div class="feature-title">Communities</div>
+        <div class="feature-desc">Join interest-based communities and connect with like-minded people.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">✨</div>
+        <div class="feature-title">Smart Feed</div>
+        <div class="feature-desc">AI-powered recommendations that surface content you'll actually love.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Privacy First</div>
+        <div class="feature-desc">Granular privacy controls. Your data stays yours.</div>
+      </div>
+    </div>
+
+    <p style="margin-top:48px;font-size:13px;opacity:.6;">
+      An independent educational project. Not affiliated with or endorsed by Google LLC.
+    </p>
+  </div>
+</section>
+</body>
+</html>

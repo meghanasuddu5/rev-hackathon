@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Search')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+<div class="gp-page">
+  <main style="max-width:760px;width:100%;">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <h1 style="font-size:22px;font-weight:700;margin-bottom:16px;">🔍 Search</h1>
+
+    <form th:action="@{/search}" method="get" style="display:flex;gap:8px;margin-bottom:24px;">
+      <input type="text" name="q" th:value="${query}"
+             class="gp-input" placeholder="Search for people, posts, communities…" autofocus/>
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
+    <!-- No results -->
+    <div th:if="${query != null and !query.isBlank() and users == null}"
+         class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-title">No results found</div>
+      <div class="empty-state-desc" th:text="'Nothing matched &quot;' + ${query} + '&quot;'"></div>
+    </div>
+
+    <!-- Users -->
+    <div th:if="${users != null and !users.isEmpty()}">
+      <div class="search-section-title">People</div>
+      <div th:each="user : ${users}" class="user-result">
+        <img th:src="${user.profilePicture != null ? user.profilePicture : '/images/avatar-default.svg'}"
+             style="width:46px;height:46px;border-radius:50%;object-fit:cover;" alt=""/>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;" th:text="${user.displayName}"></div>
+          <div style="font-size:13px;color:var(--gp-text-3);" th:text="'@' + ${user.username}"></div>
+          <div th:if="${user.bio}" style="font-size:13px;color:var(--gp-text-2);"
+               th:text="${user.bio.length() > 60 ? user.bio.substring(0,60) + '…' : user.bio}"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <a th:href="@{'/profile/' + ${user.username}}" class="btn btn-outline btn-sm">View</a>
+          <form th:action="@{'/follow/' + ${user.username}}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="submit" class="btn btn-primary btn-sm">Follow</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Posts -->
+    <div th:if="${posts != null and !posts.isEmpty()}">
+      <div class="search-section-title" style="margin-top:24px;">Posts</div>
+      <div th:each="post : ${posts}" class="post-card">
+        <div class="post-header">
+          <div class="post-author">
+            <img th:src="${post.author.profilePicture != null ? post.author.profilePicture : '/images/avatar-default.svg'}"
+                 class="post-avatar" alt=""/>
+            <div>
+              <div class="post-author-name">
+                <a th:href="@{'/profile/' + ${post.author.username}}"
+                   th:text="${post.author.displayName}" style="color:inherit;"></a>
+              </div>
+              <div class="post-meta"
+                   th:text="${#temporals.format(post.createdAt, 'MMM d, yyyy')}"></div>
+            </div>
+          </div>
+        </div>
+        <div class="post-content" th:text="${post.content}"></div>
+      </div>
+    </div>
+
+    <!-- Communities -->
+    <div th:if="${communities != null and !communities.isEmpty()}">
+      <div class="search-section-title" style="margin-top:24px;">Communities</div>
+      <div class="community-grid">
+        <div th:each="community : ${communities}" class="community-card">
+          <div class="community-banner"><span>👥</span></div>
+          <div class="community-card-body">
+            <div class="community-name" th:text="${community.name}"></div>
+            <div class="community-desc"
+                 th:text="${community.description != null ? (community.description.length() > 70 ? community.description.substring(0,70)+'…' : community.description) : ''}"></div>
+            <a th:href="@{'/communities/' + ${community.id}}"
+               class="btn btn-primary btn-sm" style="width:100%;justify-content:center;">View</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Initial state -->
+    <div th:if="${query == null or query.isBlank()}" class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-title">Search Google+</div>
+      <div class="empty-state-desc">Find people, posts, and communities.</div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Home Feed')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+<div class="gp-page">
+  <!-- MAIN FEED -->
+  <main class="gp-main">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <!-- POST COMPOSER -->
+    <div class="composer">
+      <form th:action="@{/posts/create}" method="post" enctype="multipart/form-data">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <div class="composer-top">
+          <img th:src="${currentUser.profilePicture != null ? currentUser.profilePicture : '/images/avatar-default.svg'}"
+               class="post-avatar" alt="Your avatar"/>
+          <textarea name="content" placeholder="What's on your mind?" maxlength="2000"></textarea>
+        </div>
+        <div class="composer-actions">
+          <!-- Hidden field for circleId, populated by JS when a circle is selected -->
+          <input type="hidden" name="circleId" id="post-circle-id"/>
+          <select name="audience" id="post-audience" title="Who can see this?"
+                  onchange="
+                    var sel = this;
+                    var opt = sel.options[sel.selectedIndex];
+                    var cid = opt.getAttribute('data-circle-id');
+                    document.getElementById('post-circle-id').value = cid || '';
+                    if (cid) sel.value = 'CIRCLE';
+                  ">
+            <option value="PUBLIC">🌐 Public</option>
+            <option value="FOLLOWERS">👥 Followers</option>
+            <option th:each="c : ${circles}"
+                    th:value="'CIRCLE'"
+                    th:attr="data-circle-id=${c.id}"
+                    th:text="'⭕ ' + ${c.name}">Circle</option>
+          </select>
+          <label for="post-image" class="btn btn-ghost btn-sm" style="cursor:pointer;">📷 Photo</label>
+          <input type="file" id="post-image" name="image" accept="image/*" style="display:none;"/>
+          <div style="flex:1;"></div>
+          <button type="submit" class="btn btn-primary btn-sm">Post</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- FEED TABS -->
+    <div style="display:flex;gap:0;margin-bottom:16px;background:var(--gp-surface);
+                border:1px solid var(--gp-border);border-radius:var(--gp-radius-lg);overflow:hidden;">
+      <a th:href="@{/feed}" class="btn btn-ghost"
+         style="flex:1;border-radius:0;justify-content:center;border-right:1px solid var(--gp-border);">
+        🕐 Latest
+      </a>
+      <a th:href="@{/feed}" class="btn btn-ghost"
+         style="flex:1;border-radius:0;justify-content:center;">
+        ✨ For You
+      </a>
+    </div>
+
+    <!-- POSTS -->
+    <div th:if="${posts.isEmpty()}" class="empty-state">
+      <div class="empty-state-icon">📭</div>
+      <div class="empty-state-title">Nothing here yet</div>
+      <div class="empty-state-desc">Follow some people or join communities to fill your feed.</div>
+    </div>
+
+    <div th:each="post : ${posts}" class="post-card">
+      <div class="post-header">
+        <div class="post-author">
+          <a th:href="@{'/profile/' + ${post.author.username}}">
+            <img th:src="${post.author.profilePicture != null ? post.author.profilePicture : '/images/avatar-default.svg'}"
+                 class="post-avatar" th:alt="${post.author.displayName}"/>
+          </a>
+          <div>
+            <div class="post-author-name">
+              <a th:href="@{'/profile/' + ${post.author.username}}"
+                 th:text="${post.author.displayName}" style="color:inherit;"></a>
+              <span th:class="'audience-badge audience-' + ${post.audience}"
+                    th:text="${post.audience}"></span>
+            </div>
+            <div class="post-meta">
+              @<span th:text="${post.author.username}"></span>
+              &bull;
+              <span th:text="${#temporals.format(post.createdAt, 'MMM d, yyyy')}"></span>
+            </div>
+          </div>
+        </div>
+        <!-- Delete button (only for author) -->
+        <form th:if="${post.author.id == currentUser.id}"
+              th:action="@{'/posts/' + ${post.id} + '/delete'}" method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button type="submit" class="btn btn-ghost btn-sm"
+                  onclick="return confirm('Delete this post?')"
+                  style="color:var(--google-red);">🗑</button>
+        </form>
+      </div>
+
+      <div class="post-content" th:text="${post.content}"></div>
+
+      <img th:if="${post.imageUrl != null}" th:src="${post.imageUrl}"
+           class="post-image" alt="Post image"/>
+
+      <!-- ACTIONS -->
+      <div class="post-actions">
+        <form th:action="@{'/posts/' + ${post.id} + '/like'}" method="post" style="flex:1;">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button type="submit" class="post-action-btn">
+            👍 Like (<span th:text="${post.reactions.size()}">0</span>)
+          </button>
+        </form>
+        <button class="post-action-btn" onclick="this.closest('.post-card').querySelector('.comments-section').classList.toggle('hidden')">
+          💬 Comment (<span th:text="${post.comments.size()}">0</span>)
+        </button>
+        <form th:action="@{'/posts/' + ${post.id} + '/bookmark'}" method="post" style="flex:1;">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button type="submit" class="post-action-btn">🔖 Save</button>
+        </form>
+      </div>
+
+      <!-- COMMENT SECTION -->
+      <div class="comments-section hidden">
+        <form th:action="@{'/posts/' + ${post.id} + '/comment'}" method="post" class="comment-form">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <img th:src="${currentUser.profilePicture != null ? currentUser.profilePicture : '/images/avatar-default.svg'}"
+               class="gp-avatar-sm" alt="You" style="flex-shrink:0;"/>
+          <textarea name="content" placeholder="Write a comment…" rows="1"></textarea>
+          <button type="submit" class="btn btn-primary btn-sm">Post</button>
+        </form>
+        <div th:each="comment : ${post.comments}" th:if="${!comment.deleted}" class="comment-item">
+          <img th:src="${comment.author.profilePicture != null ? comment.author.profilePicture : '/images/avatar-default.svg'}"
+               class="gp-avatar-sm" style="flex-shrink:0;" alt=""/>
+          <div class="comment-bubble">
+            <div class="comment-author" th:text="${comment.author.displayName}"></div>
+            <div class="comment-text" th:text="${comment.content}"></div>
+            <div class="comment-time" th:text="${#temporals.format(comment.createdAt, 'MMM d')}"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGINATION -->
+    <div th:if="${posts.totalPages > 1}" class="pagination">
+      <a th:if="${!posts.first}" th:href="@{/feed(page=${posts.number - 1})}"
+         class="page-btn">← Prev</a>
+      <span th:each="i : ${#numbers.sequence(0, posts.totalPages - 1)}">
+        <a th:href="@{/feed(page=${i})}"
+           th:class="${i == posts.number ? 'page-btn active' : 'page-btn'}"
+           th:text="${i + 1}"></a>
+      </span>
+      <a th:if="${!posts.last}" th:href="@{/feed(page=${posts.number + 1})}"
+         class="page-btn">Next →</a>
+    </div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside class="gp-right-panel">
+    <!-- Suggested People -->
+    <div class="widget-card">
+      <div class="widget-title">People you may know</div>
+      <div th:if="${suggestedUsers.isEmpty()}" style="font-size:13px;color:var(--gp-text-3);">
+        No suggestions yet.
+      </div>
+      <div th:each="user : ${suggestedUsers}" class="suggest-item">
+        <img th:src="${user.profilePicture != null ? user.profilePicture : '/images/avatar-default.svg'}"
+             class="gp-avatar-sm" alt=""/>
+        <div class="suggest-info">
+          <a th:href="@{'/profile/' + ${user.username}}" class="suggest-name"
+             th:text="${user.displayName}" style="color:var(--gp-text);"></a>
+          <div class="suggest-sub" th:text="'@' + ${user.username}"></div>
+        </div>
+        <form th:action="@{'/follow/' + ${user.username}}" method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button type="submit" class="btn btn-outline btn-sm">Follow</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Suggested Communities -->
+    <div class="widget-card">
+      <div class="widget-title">Communities to explore</div>
+      <div th:each="community : ${suggestedCommunities}" class="suggest-item">
+        <div style="font-size:26px;">👥</div>
+        <div class="suggest-info">
+          <a th:href="@{'/communities/' + ${community.id}}" class="suggest-name"
+             th:text="${community.name}" style="color:var(--gp-text);"></a>
+          <div class="suggest-sub"
+               th:text="${community.category != null ? community.category : 'Community'}"></div>
+        </div>
+        <form th:action="@{'/communities/' + ${community.id} + '/join'}" method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <button type="submit" class="btn btn-outline btn-sm">Join</button>
+        </form>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<style>
+  .hidden { display: none !important; }
+</style>
+
+</body>
+</html>
