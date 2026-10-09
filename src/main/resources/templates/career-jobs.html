@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Career — Jobs')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+<div class="gp-page" style="max-width:1200px;">
+  <main style="flex:1;min-width:0;">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <!-- Header -->
+    <div class="learn-hero" style="background:linear-gradient(135deg,#1a73e8 0%,#3c4db3 100%);">
+      <div>
+        <h1 class="learn-hero-title" style="color:#fff;">💼 Career Center</h1>
+        <p class="learn-hero-sub" style="color:rgba(255,255,255,0.85);">AI-powered job recommendations matched to your skills and interests.</p>
+      </div>
+      <form th:action="@{/career/jobs}" method="get" class="learn-search-form">
+        <span class="search-icon">🔍</span>
+        <input type="text" name="q" th:value="${searchQuery}"
+               placeholder="Search jobs, companies, skills…" class="gp-search-input"/>
+        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      </form>
+    </div>
+
+    <!-- Career nav pills -->
+    <div class="career-nav">
+      <a th:href="@{/career/jobs}" class="career-nav-pill career-nav-active">💼 Jobs</a>
+      <a th:href="@{/career/resume}" class="career-nav-pill">📄 Resume</a>
+      <a th:href="@{/career/skills}" class="career-nav-pill">🛠️ Skills</a>
+    </div>
+
+    <!-- AI Recommended Jobs -->
+    <div th:if="${!recommendedJobs.isEmpty()}" class="gp-card" style="margin-bottom:20px;">
+      <div class="gp-card-header" style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:22px;">✨</span>
+        <div>
+          <div style="font-weight:600;font-size:16px;">Jobs Matched for You</div>
+          <div style="font-size:12px;color:var(--gp-text-3);">AI-powered · Matched to your interests and resume skills</div>
+        </div>
+      </div>
+      <div class="job-grid">
+        <div th:each="rec : ${recommendedJobs}" class="job-card job-card-recommended">
+          <div class="job-card-header">
+            <div>
+              <div class="job-title" th:text="${rec.item.title}">Title</div>
+              <div class="job-company" th:text="${rec.item.company}">Company</div>
+            </div>
+            <span class="job-type-badge" th:text="${rec.item.jobType}">TYPE</span>
+          </div>
+          <div class="job-meta">
+            <span>📍 <span th:text="${rec.item.location}">Location</span></span>
+            <span th:if="${rec.item.salaryRange != null}">💰 <span th:text="${rec.item.salaryRange}">Salary</span></span>
+            <span class="job-exp" th:text="${rec.item.experienceLevel}">Level</span>
+          </div>
+          <!-- AI Reason -->
+          <div class="ai-reason">
+            <span class="ai-reason-icon">🤖</span>
+            <span class="ai-reason-text" th:text="${rec.reason}">Why matched</span>
+          </div>
+          <div class="resource-skills" th:if="${!rec.item.requiredSkills.isEmpty()}">
+            <span th:each="sk : ${rec.item.requiredSkills}" class="skill-chip" th:text="${sk}">skill</span>
+          </div>
+          <a th:href="${rec.item.applyUrl}" target="_blank" rel="noopener"
+             class="btn btn-primary btn-sm" style="margin-top:10px;">Apply Now →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Jobs -->
+    <div class="gp-card">
+      <div class="gp-card-header">
+        <span style="font-weight:600;font-size:16px;">
+          <span th:if="${searchQuery != null and !searchQuery.isEmpty()}">
+            Results for "<span th:text="${searchQuery}"></span>"
+          </span>
+          <span th:if="${searchQuery == null or searchQuery.isEmpty()}">All Open Positions</span>
+        </span>
+      </div>
+      <div th:if="${jobs.isEmpty()}" class="empty-state" style="padding:40px 0;">
+        <div class="empty-state-icon">🔍</div>
+        <div class="empty-state-title">No jobs found</div>
+        <div class="empty-state-desc">Try a different search term.</div>
+      </div>
+      <div class="job-list">
+        <div th:each="job : ${jobs}" class="job-list-item">
+          <div class="job-list-left">
+            <div class="job-title" th:text="${job.title}">Title</div>
+            <div class="job-company">
+              <span th:text="${job.company}"></span> ·
+              <span th:text="${job.location}"></span>
+            </div>
+            <div class="job-desc-short" th:text="${#strings.abbreviate(job.description, 140)}">Desc</div>
+            <div class="resource-skills" th:if="${!job.requiredSkills.isEmpty()}">
+              <span th:each="sk : ${job.requiredSkills}" class="skill-chip" th:text="${sk}">skill</span>
+            </div>
+          </div>
+          <div class="job-list-right">
+            <span class="job-type-badge" th:text="${job.jobType}">TYPE</span>
+            <span class="job-exp" th:text="${job.experienceLevel}">Level</span>
+            <div th:if="${job.salaryRange != null}" style="font-size:12px;color:var(--gp-text-2);margin-top:4px;"
+                 th:text="${job.salaryRange}">Salary</div>
+            <a th:href="${job.applyUrl}" target="_blank" rel="noopener"
+               class="btn btn-outline btn-sm" style="margin-top:8px;">Apply →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div th:if="${jobs.totalPages > 1}" class="pagination" style="margin-top:24px;">
+        <a th:if="${!jobs.first}" th:href="@{/career/jobs(page=${jobs.number - 1}, q=${searchQuery})}"
+           class="page-btn">← Prev</a>
+        <span th:each="i : ${#numbers.sequence(0, jobs.totalPages - 1)}">
+          <a th:href="@{/career/jobs(page=${i}, q=${searchQuery})}"
+             th:class="${i == jobs.number ? 'page-btn active' : 'page-btn'}"
+             th:text="${i + 1}"></a>
+        </span>
+        <a th:if="${!jobs.last}" th:href="@{/career/jobs(page=${jobs.number + 1}, q=${searchQuery})}"
+           class="page-btn">Next →</a>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

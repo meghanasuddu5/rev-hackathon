@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My Skills')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+<div class="gp-page" style="max-width:900px;">
+  <main style="flex:1;min-width:0;">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <!-- Career nav pills -->
+    <div class="career-nav">
+      <a th:href="@{/career/jobs}" class="career-nav-pill">💼 Jobs</a>
+      <a th:href="@{/career/resume}" class="career-nav-pill">📄 Resume</a>
+      <a th:href="@{/career/skills}" class="career-nav-pill career-nav-active">🛠️ Skills</a>
+    </div>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+
+      <!-- Add Skill Form -->
+      <div class="gp-card" style="width:280px;flex-shrink:0;">
+        <div class="gp-card-header">
+          <span style="font-weight:600;">➕ Add a Skill</span>
+        </div>
+        <div class="gp-card-body">
+          <form th:action="@{/career/skills/add}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div class="gp-form-group">
+              <label class="gp-label">Skill Name</label>
+              <input type="text" name="skillName" class="gp-input"
+                     placeholder="e.g. Java, React, SQL…" required/>
+            </div>
+            <div class="gp-form-group">
+              <label class="gp-label">Level</label>
+              <select name="level" class="gp-select">
+                <option value="BEGINNER">Beginner</option>
+                <option value="INTERMEDIATE">Intermediate</option>
+                <option value="ADVANCED">Advanced</option>
+                <option value="EXPERT">Expert</option>
+              </select>
+            </div>
+            <div class="gp-form-group">
+              <label class="gp-label">Progress: <span id="prog-val">50</span>%</label>
+              <input type="range" name="progress" min="0" max="100" value="50"
+                     style="width:100%;"
+                     oninput="document.getElementById('prog-val').textContent=this.value"/>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="width:100%;">Add Skill</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Skills List -->
+      <div style="flex:1;min-width:280px;">
+        <div th:if="${skills.isEmpty()}" class="gp-card">
+          <div class="empty-state" style="padding:40px 20px;">
+            <div class="empty-state-icon">🛠️</div>
+            <div class="empty-state-title">No skills yet</div>
+            <div class="empty-state-desc">Add your first skill to start building your profile.</div>
+          </div>
+        </div>
+
+        <div th:each="skill : ${skills}" class="skill-track-card">
+          <div class="skill-track-header">
+            <div>
+              <div class="skill-track-name" th:text="${skill.skillName}">Skill</div>
+              <div class="skill-track-level">
+                <span class="skill-level-badge"
+                      th:classappend="${skill.level == 'EXPERT' ? ' skill-expert' :
+                                       skill.level == 'ADVANCED' ? ' skill-advanced' :
+                                       skill.level == 'INTERMEDIATE' ? ' skill-intermediate' : ''}"
+                      th:text="${skill.level}">Level</span>
+                <span style="font-size:12px;color:var(--gp-text-3);margin-left:8px;">
+                  👍 <span th:text="${skill.endorsements}">0</span> endorsements
+                </span>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <!-- Endorse -->
+              <form th:action="@{'/career/skills/' + ${skill.id} + '/endorse'}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-ghost btn-sm" title="Endorse">👍</button>
+              </form>
+              <!-- Delete -->
+              <form th:action="@{'/career/skills/' + ${skill.id} + '/delete'}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-ghost btn-sm"
+                        onclick="return confirm('Remove this skill?')"
+                        style="color:var(--google-red);">🗑</button>
+              </form>
+            </div>
+          </div>
+          <!-- Progress bar -->
+          <div class="skill-progress-wrap">
+            <div class="skill-progress-bar">
+              <div class="skill-progress-fill"
+                   th:style="'width:' + ${skill.progressPercent} + '%;'"></div>
+            </div>
+            <span class="skill-progress-pct" th:text="${skill.progressPercent} + '%'">0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

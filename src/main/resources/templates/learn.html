@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Learning Hub')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+<div class="gp-page" style="max-width:1200px;">
+  <main style="flex:1;min-width:0;">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+
+    <!-- Header -->
+    <div class="learn-hero">
+      <div>
+        <h1 class="learn-hero-title">🎓 Learning Hub</h1>
+        <p class="learn-hero-sub">Courses, articles, and resources personalized to your interests — with AI-powered explanations for every recommendation.</p>
+      </div>
+      <form th:action="@{/learn}" method="get" class="learn-search-form">
+        <span class="search-icon">🔍</span>
+        <input type="text" name="q" th:value="${searchQuery}"
+               placeholder="Search courses, topics, skills…" class="gp-search-input"/>
+        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      </form>
+    </div>
+
+    <!-- AI Recommendations -->
+    <div th:if="${!recommended.isEmpty()}" class="gp-card" style="margin-bottom:20px;">
+      <div class="gp-card-header" style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:22px;">✨</span>
+        <div>
+          <div style="font-weight:600;font-size:16px;">Recommended for You</div>
+          <div style="font-size:12px;color:var(--gp-text-3);">AI-powered · Based on your interests and activity</div>
+        </div>
+      </div>
+      <div class="resource-grid">
+        <div th:each="rec : ${recommended}" class="resource-card resource-card-recommended">
+          <div class="resource-type-badge" th:text="${rec.item.resourceType}">COURSE</div>
+          <div class="resource-title" th:text="${rec.item.title}">Title</div>
+          <div class="resource-provider">
+            <span class="resource-provider-name" th:text="${rec.item.provider}">Provider</span>
+            <span class="resource-difficulty" th:text="${rec.item.difficulty}">Level</span>
+          </div>
+          <!-- AI Reason Badge -->
+          <div class="ai-reason">
+            <span class="ai-reason-icon">🤖</span>
+            <span class="ai-reason-text" th:text="${rec.reason}">Why recommended</span>
+          </div>
+          <div class="resource-meta">
+            <span th:if="${rec.item.durationMinutes > 0}">
+              ⏱
+              <span th:text="${rec.item.durationMinutes >= 60 ?
+                (rec.item.durationMinutes / 60) + 'h ' + (rec.item.durationMinutes % 60) + 'm' :
+                rec.item.durationMinutes + ' min'}"></span>
+            </span>
+            <span>⭐ <span th:text="${rec.item.rating}">0</span></span>
+            <span th:if="${rec.item.free}" class="badge-free">FREE</span>
+            <span th:if="${!rec.item.free}" class="badge-paid">PAID</span>
+          </div>
+          <a th:href="${rec.item.url}" target="_blank" rel="noopener"
+             class="btn btn-primary btn-sm" style="margin-top:10px;width:100%;text-align:center;">
+            Start Learning →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Resources -->
+    <div class="gp-card">
+      <div class="gp-card-header">
+        <span style="font-weight:600;font-size:16px;">
+          <span th:if="${searchQuery != null and !searchQuery.isEmpty()}">
+            Search results for "<span th:text="${searchQuery}"></span>"
+          </span>
+          <span th:if="${searchQuery == null or searchQuery.isEmpty()}">📚 All Resources</span>
+        </span>
+      </div>
+      <div th:if="${resources.isEmpty()}" class="empty-state" style="padding:40px 0;">
+        <div class="empty-state-icon">🔍</div>
+        <div class="empty-state-title">No resources found</div>
+        <div class="empty-state-desc">Try a different search term.</div>
+      </div>
+      <div class="resource-grid">
+        <div th:each="r : ${resources}" class="resource-card">
+          <div class="resource-type-badge" th:text="${r.resourceType}">COURSE</div>
+          <div class="resource-title" th:text="${r.title}">Title</div>
+          <div class="resource-provider">
+            <span class="resource-provider-name" th:text="${r.provider}">Provider</span>
+            <span class="resource-difficulty" th:text="${r.difficulty}">Level</span>
+          </div>
+          <div class="resource-desc" th:text="${r.description}">Description</div>
+          <div class="resource-skills" th:if="${!r.skills.isEmpty()}">
+            <span th:each="sk : ${r.skills}" class="skill-chip" th:text="${sk}">skill</span>
+          </div>
+          <div class="resource-meta">
+            <span th:if="${r.durationMinutes > 0}">
+              ⏱
+              <span th:text="${r.durationMinutes >= 60 ?
+                (r.durationMinutes / 60) + 'h ' + (r.durationMinutes % 60) + 'm' :
+                r.durationMinutes + ' min'}"></span>
+            </span>
+            <span>⭐ <span th:text="${r.rating}">0</span></span>
+            <span th:if="${r.free}" class="badge-free">FREE</span>
+            <span th:if="${!r.free}" class="badge-paid">PAID</span>
+          </div>
+          <a th:href="${r.url}" target="_blank" rel="noopener"
+             class="btn btn-outline btn-sm" style="margin-top:10px;width:100%;text-align:center;">
+            View Resource →
+          </a>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div th:if="${resources.totalPages > 1}" class="pagination" style="margin-top:24px;">
+        <a th:if="${!resources.first}" th:href="@{/learn(page=${resources.number - 1}, q=${searchQuery})}"
+           class="page-btn">← Prev</a>
+        <span th:each="i : ${#numbers.sequence(0, resources.totalPages - 1)}">
+          <a th:href="@{/learn(page=${i}, q=${searchQuery})}"
+             th:class="${i == resources.number ? 'page-btn active' : 'page-btn'}"
+             th:text="${i + 1}"></a>
+        </span>
+        <a th:if="${!resources.last}" th:href="@{/learn(page=${resources.number + 1}, q=${searchQuery})}"
+           class="page-btn">Next →</a>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>
